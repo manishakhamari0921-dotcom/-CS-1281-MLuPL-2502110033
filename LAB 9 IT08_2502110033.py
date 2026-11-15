@@ -1,66 +1,47 @@
- IT 08
-
 import re
 
-# Regex pattern:
-# 1. Work order must follow WO + digits
-# 2. Machine name is the second field
-# 3. Status is the third field
-# 4. Allows any spacing around | separators
-
-pattern = re.compile(
-    r"^\s*(WO\d+)\s*\|\s*([^|]+?)\s*\|\s*(.+?)\s*$"
-)
-
-def parse_record(line):
-    # OLD VERSION: split-based parser
-    # parts = [part.strip() for part in line.split("|")]
-    # if len(parts) != 3:
-    #     return None
-    # return parts[0], parts[1], parts[2]
-
-    # NEW VERSION: Regex parser
-    match = pattern.fullmatch(line)
-
-    if match:
-        work_order, machine, status = match.groups()
-
-        if machine.strip() and status.strip():
-            return work_order, machine.strip(), status.strip()
-
-    return None
+# Regex pattern for parsing records
+pattern = r"^\s*(PART-\d{3})\s*,\s*(\d+)\s*,\s*([A-Za-z]+)\s*$"
 
 
-# Read actual input from file
-input_file = "data/shift_log.txt"
+def parse_line(line):
 
-valid_records = []
-rejected_records = []
+    match = re.match(pattern, line)
 
-with open(input_file, "r") as file:
-    for line_number, line in enumerate(file, start=1):
-        result = parse_record(line.strip())
+    if not match:
+        raise ValueError("Invalid record format")
 
-        if result:
-            valid_records.append(result)
-        else:
-            rejected_records.append((line_number, line.strip()))
+    code = match.group(1)
+    quantity = int(match.group(2))
+    material = match.group(3)
 
-# Display results
-print("REGEX PARSER RESULTS")
-print("--------------------")
+    if quantity <= 0:
+        raise ValueError("Quantity must be positive")
 
-print("Valid records:", len(valid_records))
-print("Rejected records:", len(rejected_records))
+    return code, quantity, material
 
-print("\nAccepted records:")
-for record in valid_records:
-    print(record)
 
-print("\nRejected records:")
-for record in rejected_records:
-    print(record)
+records = [
+    "PART-101,10,Steel",
+    " PART-102 , 20 , Iron ",
+    "PART-103,15,Copper",
+    "INVALID,20,Steel",
+    "PART-104,-5,Wood",
+    "PART-105,30,Plastic"
+]
 
-# Test comparison note:
-# Regex parser survived more spacing variations than split().
-# Split parser was simpler but did not validate the WO code shape.
+print("REGEX PARSING RESULTS")
+
+for line in records:
+
+    try:
+        result = parse_line(line)
+        print("VALID:", result)
+
+    except ValueError as e:
+        print("INVALID:", line, "-", e)
+
+
+# Old split-based parsing:
+# parts = line.split(",")
+# This version is retained for comparison.
