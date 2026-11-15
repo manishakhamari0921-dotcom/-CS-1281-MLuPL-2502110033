@@ -1,112 +1,100 @@
- IT 10
-  
 import os
 import csv
 
-# File paths
+os.makedirs("data", exist_ok=True)
+
 input_file = "data/shift_log.txt"
-report_file = "data/report.txt"
-rejects_file = "data/rejects.csv"
 
-# Storage
-valid_records = []
-rejected_records = []
+# Create sample input if missing
+if not os.path.exists(input_file):
 
-# Step 1: Read input file
+    sample = [
+        "PART-101,10,Steel",
+        "PART-102,20,Iron",
+        "INVALID,30,Copper",
+        "PART-103,-5,Wood",
+        "PART-104,15,Plastic"
+    ]
+
+    with open(input_file, "w") as f:
+        f.write("\n".join(sample))
+
+
+accepted = []
+rejects = []
+
+# READ
 with open(input_file, "r") as file:
     lines = file.readlines()
 
-# Step 2: Parse and validate
-for line_number, line in enumerate(lines, start=1):
+
+# PARSE AND VALIDATE
+for line in lines:
+
     line = line.strip()
 
-    if not line:
-        rejected_records.append(
-            (line_number, line, "Empty record")
-        )
-        continue
+    try:
+        parts = line.split(",")
 
-    parts = [part.strip() for part in line.split("|")]
+        if len(parts) != 3:
+            raise ValueError("Expected 3 fields")
 
-    if len(parts) != 3:
-        rejected_records.append(
-            (line_number, line, "Incorrect number of fields")
-        )
-        continue
+        code, quantity, material = parts
 
-    work_order, machine, status = parts
+        if not code.startswith("PART-"):
+            raise ValueError("Invalid part code")
 
-    if not work_order.startswith("WO"):
-        rejected_records.append(
-            (line_number, line, "Invalid work order")
-        )
-        continue
+        quantity = int(quantity)
 
-    if not machine or machine == "???":
-        rejected_records.append(
-            (line_number, line, "Invalid machine name")
-        )
-        continue
+        if quantity <= 0:
+            raise ValueError("Invalid quantity")
 
-    if not status or status == "NULL" or "ERROR" in status:
-        rejected_records.append(
-            (line_number, line, "Invalid status")
-        )
-        continue
+        if not material.strip():
+            raise ValueError("Missing material")
 
-    if "HIGHHIGHHIGH" in status:
-        rejected_records.append(
-            (line_number, line, "Invalid pressure value")
-        )
-        continue
+        accepted.append([code, quantity, material.strip()])
 
-    valid_records.append((work_order, machine, status))
+    except (ValueError, TypeError) as e:
+        rejects.append([line, str(e)])
 
-# Step 3: Aggregate valid records
-machine_counts = {}
 
-for work_order, machine, status in valid_records:
-    machine_counts[machine] = machine_counts.get(machine, 0) + 1
+# AGGREGATE
+total_quantity = sum(row[1] for row in accepted)
 
-# Step 4: Write human-readable report
-with open(report_file, "w") as file:
-    file.write("SHIFT LOG REPORT\n")
-    file.write("=" * 65 + "\n")
-    file.write(
-        f"{'WORK ORDER':<15}{'MACHINE':<20}{'STATUS':<30}\n"
-    )
-    file.write("-" * 65 + "\n")
+average = (
+    total_quantity / len(accepted)
+    if accepted else 0
+)
 
-    for work_order, machine, status in valid_records:
-        file.write(
-            f"{work_order:<15}{machine:<20}{status:<30}\n"
-        )
 
-    file.write("\nMACHINE SUMMARY\n")
-    file.write("-" * 30 + "\n")
+# WRITE HUMAN REPORT
+with open("data/report.txt", "w") as file:
 
-    for machine, count in machine_counts.items():
-        file.write(f"{machine:<20}{count:>5}\n")
+    file.write("PRODUCTION REPORT\n")
+    file.write("========================\n")
 
-    file.write("\n")
-    file.write(f"Total input records: {len(lines)}\n")
-    file.write(f"Accepted records: {len(valid_records)}\n")
-    file.write(f"Rejected records: {len(rejected_records)}\n")
+    file.write("Total records: " + str(len(lines)) + "\n")
+    file.write("Accepted: " + str(len(accepted)) + "\n")
+    file.write("Rejected: " + str(len(rejects)) + "\n")
 
-# Step 5: Write rejected records to CSV
-with open(rejects_file, "w", newline="") as file:
+    file.write("Total quantity: " + str(total_quantity) + "\n")
+    file.write("Average quantity: " + str(average) + "\n")
+
+    file.write("\nACCEPTED RECORDS\n")
+
+    for row in accepted:
+        file.write(str(row) + "\n")
+
+
+# WRITE REJECTS CSV
+with open("data/rejects.csv", "w", newline="") as file:
+
     writer = csv.writer(file)
 
-    writer.writerow(["Line Number", "Rejected Record", "Reason"])
+    writer.writerow(["Bad Line", "Reason"])
+    writer.writerows(rejects)
 
-    writer.writerows(rejected_records)
 
-# Step 6: Print completion summary
-print("FULL PIPELINE COMPLETED")
-print("-----------------------")
-print("Input records:", len(lines))
-print("Accepted records:", len(valid_records))
-print("Rejected records:", len(rejected_records))
-print("\nOutput files created:")
-print(report_file)
-print(rejects_file)
+print("Pipeline completed successfully!")
+print("Report saved in data/report.txt")
+print("Rejects saved in data/rejects.csv")
