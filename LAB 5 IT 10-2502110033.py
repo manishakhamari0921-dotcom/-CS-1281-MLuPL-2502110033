@@ -1,43 +1,24 @@
 logs = [
-    "P101   25.4   A",
-    "P102  30.2 B",
-    "P103    18.7    C",
-    "P104 22.5 D",
-    "P105     27.8 E",
-    "P106  31.0    F",
-    "P107   19.6 G",
-    "P108  24.3     H",
-    "P109 29.7 I",
-    "P110    21.5    J"
+    "P201, 24.98, DAY",
+    "P202, 25.02, DAY",
+    "P203, 24.95, DAY",
+    "P204, 25.06, DAY",
+    "P205, 24.99, DAY",
+    "P206, 25.01, DAY",
+    "P207, 24.97, DAY",
+    "P208, 25.04, DAY",
+    "P209, 24.93, DAY",
+    "P210, 25.00, DAY"
 ]
 
-# One list to store all diameters
-diameters = []
+def get_diameter(line):
+    fields = line.split(",")
+    return float(fields[1].strip())
 
-# Parse each log line
-for line in logs:
-    parts = line.split()
+diameters = [get_diameter(x) for x in logs]
 
-    part_code = parts[0]
-    diameter = float(parts[1])
-    shift = parts[2]
-
-    diameters.append(diameter)
-
-# Report the results
-count = len(diameters)
-average = sum(diameters) / count
-minimum = min(diameters)
-maximum = max(diameters)
-
-print("Diameters:", diameters)
-print("Count:", count)
-print("Average:", average)
-print("Minimum:", minimum)
-print("Maximum:", maximum)
-
-# Justification:
-# A list is used because we want to keep every diameter,
-# including duplicate values, and preserve their order.
-# A set would remove duplicate values and does not preserve
-# the original order in the same way. 
+print("Diameter List:", diameters)
+print("Total Parts:", len(diameters))
+print("Average:", round(sum(diameters) / len(diameters), 2))
+print("Minimum:", min(diameters))
+print("Maximum:", max(diameters))
