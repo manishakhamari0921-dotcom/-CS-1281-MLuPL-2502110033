@@ -1,40 +1,39 @@
-id="q7w4az"
+# Custom exception example
+
 class SpecViolation(Exception):
     pass
 
 
-class Machine:
-    def __init__(self, name, limit):
-        self.name = name
-        self.limit = limit
-        self.parts = 0
+# Operating method
+def process_job(code, quantity, material):
 
-    def operate(self, speed):
-        if speed < 0 or speed > self.limit:
-            raise SpecViolation(
-                f"{self.name}: speed {speed} is outside limit {self.limit}"
-            )
+    if not code.startswith("PART-"):
+        raise SpecViolation("Invalid part code")
 
-        self.parts += 1
-        return f"{self.name} processed job"
+    if quantity <= 0:
+        raise SpecViolation("Quantity must be positive")
+
+    if material.strip() == "":
+        raise SpecViolation("Material is missing")
+
+    return "Job processed successfully"
 
 
-machines = [
-    Machine("Lathe", 100),
-    Machine("Drill", 80),
-    Machine("Mill", 120)
+# Driving program
+jobs = [
+    ("PART-101", 10, "Steel"),
+    ("INVALID", 20, "Iron"),
+    ("PART-103", -5, "Copper"),
+    ("PART-104", 15, "Aluminium")
 ]
 
-jobs = [50, 90, 150, 60, 70, 110, 40]
-
-for i, speed in enumerate(jobs, 1):
-    machine = machines[(i - 1) % len(machines)]
+for job in jobs:
 
     try:
-        print(machine.operate(speed))
-    except SpecViolation as error:
-        print("REJECTED:", error)
+        result = process_job(job[0], job[1], job[2])
+        print(job, ":", result)
 
-print("\nFleet Report")
-for machine in machines:
-    print(machine.name, ":", machine.parts, "parts")
+    except SpecViolation as e:
+        print(job, ": REJECTED -", e)
+
+print("\nMachine processing completed.")
