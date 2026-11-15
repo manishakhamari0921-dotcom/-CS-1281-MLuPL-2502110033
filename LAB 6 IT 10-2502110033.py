@@ -1,27 +1,53 @@
-# Before refactoring: 24 lines
-# After refactoring: 17 lines
-# Difference: 7 lines saved
 
+# IT10 - Refactor Lab 04
+
+# Function 1: Inspect component
 def inspect(dia):
-    if dia < 10:
-        return "Small"
+    if dia < 10 or dia > 40:
+        return "Out of Spec"
     elif dia < 20:
+        return "Small"
+    elif dia < 30:
         return "Medium"
-    return "Large"
+    else:
+        return "Large"
 
 
+# Function 2: Count labels
 def tally(labels):
     counts = {}
+
     for label in labels:
         counts[label] = counts.get(label, 0) + 1
+
     return counts
 
 
+# Function 3: Generate report
 def report(shift, counts):
-    return f"Shift {shift}: {counts}"
+    total = sum(counts.values())
+
+    return (
+        f"Shift {shift} | "
+        f"Total Parts: {total} | "
+        f"Details: {counts}"
+    )
 
 
-diameters = [5, 12, 8, 22, 15, 25]
-labels = [inspect(d) for d in diameters]
-counts = tally(labels)
-print(report("A", counts))
+# Main program
+def main():
+
+    diameters = [15, 22, 35, 18, 27, 45, 32]
+
+    labels = []
+
+    for dia in diameters:
+        labels.append(inspect(dia))
+
+    counts = tally(labels)
+
+    print(report("A", counts))
+
+
+if __name__ == "__main__":
+    main()
