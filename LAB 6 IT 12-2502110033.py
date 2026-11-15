@@ -1,57 +1,56 @@
-# IT12 Rough cut · Three Jigs warm-up
 
-# 1. inspect(dia) → bin label
+# IT12 - Rough Cut: Three Jigs
+
+# Jig 1: Inspect component diameter
 def inspect(dia):
-    if dia < 10:
-        return "Small"
+    if dia < 10 or dia > 40:
+        return "Out of Spec"
     elif dia < 20:
+        return "Small"
+    elif dia < 30:
         return "Medium"
     else:
         return "Large"
 
 
-# Test inspect()
-print("inspect tests:")
-print(inspect(5))
-print(inspect(15))
-print(inspect(25))
-
-
-# 2. tally(labels) → count dictionary
+# Jig 2: Count component labels
 def tally(labels):
     counts = {}
+
     for label in labels:
-        if label in counts:
-            counts[label] += 1
-        else:
-            counts[label] = 1
+        counts[label] = counts.get(label, 0) + 1
+
     return counts
 
 
-# Test tally()
-print("\ntally test:")
-print(tally(["Small", "Medium", "Small", "Large", "Medium"]))
-
-
-# 3. report(shift, counts) → formatted line
+# Jig 3: Generate shift report
 def report(shift, counts):
-    return f"Shift {shift}: {counts}"
+    total = sum(counts.values())
+
+    return (
+        f"Shift {shift} | "
+        f"Total Parts: {total} | "
+        f"Details: {counts}"
+    )
 
 
-# Test report()
-print("\nreport test:")
-print(report("A", {"Small": 2, "Medium": 2, "Large": 1}))
+# Test each function independently
+if __name__ == "__main__":
 
+    # Test 1: Inspect
+    print("JIG 1 - INSPECTION")
+    print(inspect(15))
+    print(inspect(25))
+    print(inspect(35))
+    print(inspect(45))
 
-# 4. Combine everything
-print("\nCombined test:")
+    # Test 2: Tally
+    print("\nJIG 2 - TALLY")
+    labels = ["Small", "Medium", "Small",
+              "Large", "Medium", "Small"]
+    counts = tally(labels)
+    print(counts)
 
-diameters = [5, 12, 8, 22, 15, 25]
-
-labels = []
-for dia in diameters:
-    labels.append(inspect(dia))
-
-counts = tally(labels)
-
-print(report("A", counts))
+    # Test 3: Report
+    print("\nJIG 3 - REPORT")
+    print(report("A", counts))
