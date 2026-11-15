@@ -1,153 +1,153 @@
-  IT 06
-
 import os
-import re
 import csv
 from datetime import datetime
-from collections import defaultdict
 
-# Folder and output paths
-DATA_DIR = "data"
-HISTORY_FILE = os.path.join(DATA_DIR, "run_history.csv")
-PLANT_REPORT = os.path.join(DATA_DIR, "plant_summary.txt")
+data_folder = "data"
+output_folder = "output"
 
-os.makedirs(DATA_DIR, exist_ok=True)
-
-# Regex parser
-pattern = re.compile(
-    r"^\s*(WO\d+)\s*\|\s*([^|]+?)\s*\|\s*(.+?)\s*$"
-)
+os.makedirs(data_folder, exist_ok=True)
+os.makedirs(output_folder, exist_ok=True)
 
 
-def parse_record(line):
-    match = pattern.fullmatch(line.strip())
+# Process one file
+def process_file(filename):
 
-    if not match:
-        return None
+    accepted = []
+    rejects = []
 
-    work_order, machine, status = match.groups()
+    filepath = os.path.join(data_folder, filename)
 
-    if not machine.strip() or not status.strip():
-        return None
+    with open(filepath, "r") as file:
+        lines = file.readlines()
 
-    # Reject suspicious test data
-    if "NULL" in status or "ERROR" in status:
-        return None
+    for line in lines:
 
-    if "HIGHHIGHHIGH" in status:
-        return None
+        line = line.strip()
 
-    return work_order, machine.strip(), status.strip()
+        try:
+            parts = line.split(",")
 
+            if len(parts) != 3:
+                raise ValueError("Expected 3 fields")
 
-def process_file(file_path):
-    valid_records = []
-    rejected_records = []
-    total_records = 0
+            code, quantity, material = parts
 
-    with open(file_path, "r") as file:
-        for line_number, line in enumerate(file, start=1):
-            total_records += 1
+            if not code.startswith("PART-"):
+                raise ValueError("Invalid part code")
 
-            record = parse_record(line)
+            quantity = int(quantity)
 
-            if record:
-                valid_records.append(record)
-            else:
-                rejected_records.append(
-                    (line_number, line.strip(), "Invalid record")
-                )
+            if quantity <= 0:
+                raise ValueError("Invalid quantity")
 
-    return valid_records, rejected_records, total_records
+            if not material.strip():
+                raise ValueError("Missing material")
 
+            accepted.append([code, quantity, material.strip()])
 
-def write_report(file_name, records, rejected, total):
-    report_name = os.path.splitext(file_name)[0] + "_report.txt"
-    report_path = os.path.join(DATA_DIR, report_name)
+        except (ValueError, TypeError) as e:
+            rejects.append([line, str(e)])
 
-    machine_counts = defaultdict(int)
+    total = sum(row[1] for row in accepted)
 
-    for work_order, machine, status in records:
-        machine_counts[machine] += 1
+    average = total / len(accepted) if accepted else 0
+
+    # Individual report
+    report_name = filename.replace(".txt", "_report.txt")
+    report_path = os.path.join(output_folder, report_name)
 
     with open(report_path, "w") as file:
-        file.write("SHIFT REPORT\n")
-        file.write("=" * 65 + "\n")
 
-        file.write(
-            f"{'WORK ORDER':<15}{'MACHINE':<20}{'STATUS':<30}\n"
-        )
-        file.write("-" * 65 + "\n")
+        file.write("PRODUCTION REPORT\n")
+        file.write("====================\n")
 
-        for work_order, machine, status in records:
-            file.write(
-                f"{work_order:<15}{machine:<20}{status:<30}\n"
-            )
+        file.write("File: " + filename + "\n")
+        file.write("Records: " + str(len(lines)) + "\n")
+        file.write("Accepted: " + str(len(accepted)) + "\n")
+        file.write("Rejected: " + str(len(rejects)) + "\n")
+        file.write("Total quantity: " + str(total) + "\n")
+        file.write("Average quantity: " + str(average) + "\n")
 
-        file.write("\nMACHINE SUMMARY\n")
-        file.write("-" * 30 + "\n")
+        file.write("\nACCEPTED RECORDS\n")
 
-        for machine, count in sorted(machine_counts.items()):
-            file.write(f"{machine:<20}{count:>5}\n")
+        for row in accepted:
+            file.write(str(row) + "\n")
 
-        file.write("\nTOTALS\n")
-        file.write(f"Records processed: {total}\n")
-        file.write(f"Accepted records: {len(records)}\n")
-        file.write(f"Rejected records: {len(rejected)}\n")
-
-    # Separate reject file for each input
-    reject_path = os.path.join(
-        DATA_DIR,
-        os.path.splitext(file_name)[0] + "_rejects.csv"
-    )
-
-    with open(reject_path, "w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["Line Number", "Rejected Record", "Reason"])
-        writer.writerows(rejected)
-
-    return report_path
+    return len(lines), len(accepted), len(rejects), total
 
 
-def update_history(file_name, processed, rejects):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+# BATCH PROCESSING
+total_records = 0
+total_accepted = 0
+total_rejected = 0
+total_quantity = 0
 
-    file_exists = os.path.exists(HISTORY_FILE)
-    needs_header = not file_exists or os.path.getsize(HISTORY_FILE) == 0
+history = []
 
-    with open(HISTORY_FILE, "a", newline="") as file:
-        writer = csv.writer(file)
+for filename in os.listdir(data_folder):
 
-        if needs_header:
-            writer.writerow([
-                "Timestamp",
-                "File Name",
-                "Records Processed",
-                "Rejects"
-            ])
+    if filename.endswith(".txt") and filename != "report.txt":
 
-        writer.writerow([
-            timestamp,
-            file_name,
-            processed,
-            rejects
+        result = process_file(filename)
+
+        records, accepted, rejected, quantity = result
+
+        total_records += records
+        total_accepted += accepted
+        total_rejected += rejected
+        total_quantity += quantity
+
+        history.append([
+            filename,
+            records,
+            accepted,
+            rejected
         ])
 
-
-# MAIN BATCH JOB
-all_records = []
-total_processed = 0
-total_rejected = 0
-processed_files = []
-
-print("PLANT BATCH JOB")
-print("=" * 40)
-
-# Only process source .txt files, not generated reports
-for file_name in sorted(os.listdir(DATA_DIR)):
-
-    if not file_name.lower().endswith(".txt"):
-        continue
+        print("Processed:", filename)
 
 
-print("\nTotal line count:", len(lines))
+# COMBINED PLANT SUMMARY
+with open(os.path.join(output_folder, "plant_summary.txt"), "w") as file:
+
+    file.write("COMBINED PLANT SUMMARY\n")
+    file.write("========================\n")
+
+    file.write("Total records: " + str(total_records) + "\n")
+    file.write("Total accepted: " + str(total_accepted) + "\n")
+    file.write("Total rejected: " + str(total_rejected) + "\n")
+    file.write("Total quantity: " + str(total_quantity) + "\n")
+
+
+# APPEND RUN HISTORY
+history_file = os.path.join(output_folder, "run_history.csv")
+
+file_exists = os.path.exists(history_file)
+
+with open(history_file, "a", newline="") as file:
+
+    writer = csv.writer(file)
+
+    if not file_exists:
+        writer.writerow([
+            "Timestamp",
+            "Filename",
+            "Records",
+            "Accepted",
+            "Rejected"
+        ])
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    for row in history:
+        writer.writerow([timestamp] + row)
+
+
+print("\n========== BATCH COMPLETED ==========")
+print("Total records:", total_records)
+print("Accepted:", total_accepted)
+print("Rejected:", total_rejected)
+print("Total quantity:", total_quantity)
+
+print("\nReports saved in output folder.")
+print("Run history updated successfully.")
