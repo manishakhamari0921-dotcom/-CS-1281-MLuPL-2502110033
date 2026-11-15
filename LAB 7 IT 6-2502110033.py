@@ -1,40 +1,116 @@
+
+# shoptools.py
+
 class Machine:
+
     def __init__(self, name, limit):
         self.name = name
         self.limit = limit
-        self.parts = 0
+        self.total_parts = 0
+        self.job_count = 0
         self.busy = False
 
-    def process(self, speed):
-        if speed <= self.limit:
-            self.parts += 1
-            self.busy = True
-            return True
-        return False
+    # Check machine availability
+    def is_free(self):
+        return not self.busy
 
+    # Execute production job
+    def run_job(self, rpm, quantity):
 
-machines = [
-    Machine("Lathe", 100),
-    Machine("Drill", 80),
-    Machine("Mill", 120)
+        if self.busy:
+            return False
+
+        if rpm < 500 or rpm > self.limit or quantity <= 0:
+            return False
+
+        self.busy = True
+
+        self.total_parts += quantity
+        self.job_count += 1
+
+        self.busy = False
+
+        return True
+
+    # Machine report
+    def status(self):
+        return {
+            "Name": self.name,
+            "Parts Produced": self.total_parts,
+            "Jobs Completed": self.job_count,
+            "Availability": self.is_free()
+            
+# main.py
+
+from shoptools import Machine
+
+# Create three machines
+fleet = [
+    Machine("CNC-A", 3000),
+    Machine("CNC-B", 2800),
+    Machine("CNC-C", 3200)
 ]
 
-jobs = [50, 70, 90, 60, 110, 40, 100, 75, 115, 55]
+# Production job data
+jobs = [
+    (1200, 12),
+    (1800, 8),
+    (1500, 15),
+    (900, 6),
+    (2200, 10),
+    (1100, 9),
+    (2500, 14),
+    (1700, 7),
+    (2000, 13)
+]
 
-for speed in jobs:
-    machine = next((m for m in machines if not m.busy), None)
+# Allocate jobs to the least-loaded free machine
+for rpm, quantity in jobs:
 
-    if machine:
-        machine.process(speed)
+    available = [
+        machine for machine in fleet
+        if machine.is_free()
+    ]
 
-    for m in machines:
-        m.busy = False
+    if available:
 
-busiest = max(machines, key=lambda m: m.parts)
+        selected = min(
+            available,
+            key=lambda machine: machine.total_parts
+        )
 
-print("Plant Report")
-for m in machines:
-    print(m.name, ":", m.parts, "parts")
+        if selected.run_job(rpm, quantity):
+            print(
+                f"{quantity} parts allocated to "
+                f"{selected.name}"
+            )
 
-print("Plant total:", sum(m.parts for m in machines))
-print("Busiest machine:", busiest.name)
+    else:
+        print("No machine available.")
+
+
+# Individual machine reports
+print("\nMACHINE REPORTS")
+
+for machine in fleet:
+    print(machine.status())
+
+
+# Calculate total plant production
+plant_total = sum(
+    machine.total_parts for machine in fleet
+)
+
+print("\nTotal Plant Production:", plant_total)
+
+
+# Identify busiest machine
+busiest = max(
+    fleet,
+    key=lambda machine: machine.total_parts
+)
+
+print("Busiest Machine:", busiest.name)
+print("Production:", busiest.total_parts)
+
+        }
