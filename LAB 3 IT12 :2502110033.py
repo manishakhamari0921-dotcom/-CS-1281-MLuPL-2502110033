@@ -1,2 +1,6 @@
-name=input("operator name:")
-print("hello",name)
+name = input("Enter operator name: ")
+
+message = "Hello, " + name + "!"
+print(message)
+
+print("Welcome to the Shop Floor")
