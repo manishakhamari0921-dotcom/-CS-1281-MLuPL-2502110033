@@ -1,27 +1,45 @@
-# Eight hostile inputs from the rig
+# Eight hostile inputs for testing the parser
+
 hostile = [
     "",
-    "ABC",
-    "12,",
-    ",25",
-    "12,25,30",
-    "abc,25",
-    "P101,-5",
-    "P101,999999"
+    "PART-101,10,Steel,Extra",
+    "PART-102,-5,Iron",
+    "PART-103,abc,Copper",
+    "PART-104,0,Aluminium",
+    "INVALID,10,Steel",
+    "PART-105,10",
+    "PART-106,10,"
 ]
 
+def parse_line(line):
+    parts = line.split(",")
 
-def parser(line):
-    # Current lab05 parser
-    code, dia = line.split(",")
-    return code, float(dia)
+    if len(parts) != 3:
+        raise ValueError("Expected 3 fields")
+
+    code, quantity, material = parts
+
+    if not code.startswith("PART-"):
+        raise ValueError("Invalid part code")
+
+    quantity = int(quantity)
+
+    if quantity <= 0:
+        raise ValueError("Quantity must be positive")
+
+    if not material.strip():
+        raise ValueError("Material is missing")
+
+    return code, quantity, material.strip()
 
 
-print("Hostile input test:")
+print("HOSTILE INPUT TESTING")
 
-for i, test in enumerate(hostile, 1):
+for line in hostile:
     try:
-        result = parser(test)
-        print(f"Test {i}: PASS -> {result}")
-    except Exception as e:
-        print(f"Test {i}: KILLED -> {type(e).__name__}: {e}")
+        print("Testing:", repr(line))
+        print("Result:", parse_line(line))
+    except ValueError as e:
+        print("Rejected:", e)
+    except TypeError as e:
+        print("Rejected:", e)
