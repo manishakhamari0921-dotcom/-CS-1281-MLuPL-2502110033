@@ -1,42 +1,72 @@
-def parse(line):
-    try:
-        code, dia = line.split(",")
-        dia = float(dia)
+# Automated self-testing program
 
-        if not code.startswith("P"):
-            raise ValueError("invalid part code")
+def parse_line(line):
 
-        if dia < 0 or dia > 100:
-            raise ValueError("diameter out of range")
+    parts = line.split(",")
 
-        return code, dia
+    if len(parts) != 3:
+        raise ValueError("Expected 3 fields")
 
-    except ValueError:
-        return None
+    code, quantity, material = parts
+
+    if not code.startswith("PART-"):
+        raise ValueError("Invalid part code")
+
+    quantity = int(quantity)
+
+    if quantity <= 0:
+        raise ValueError("Invalid quantity")
+
+    if not material.strip():
+        raise ValueError("Missing material")
+
+    return code, quantity, material.strip()
 
 
 def run_tests():
+
     hostile = [
         "",
-        "ABC",
-        "12,",
-        ",25",
-        "12,25,30",
-        "abc,25",
-        "P101,-5",
-        "P101,999999"
+        "PART-101,10,Steel",
+        "INVALID,20,Iron",
+        "PART-102,-5,Copper",
+        "PART-103,abc,Wood",
+        "PART-104,0,Plastic",
+        "PART-105,10",
+        "PART-106,10,"
     ]
 
-    print("PASS/FAIL TABLE")
-    print("-------------------------------")
+    print("\n========== AUTOMATED TESTING ==========")
+
+    passed = 0
+    failed = 0
 
     for i, line in enumerate(hostile, 1):
-        result = parse(line)
 
-        if result is None:
-            print(f"Test {i}: PASS - rejected {line!r}")
-        else:
-            print(f"Test {i}: FAIL - accepted {line!r}")
+        try:
+            parse_line(line)
+
+            # Only the valid second input should pass
+            if i == 2:
+                print("Test", i, ": PASS")
+                passed += 1
+            else:
+                print("Test", i, ": FAIL")
+                failed += 1
+
+        except (ValueError, TypeError):
+            if i == 2:
+                print("Test", i, ": FAIL")
+                failed += 1
+            else:
+                print("Test", i, ": PASS")
+                passed += 1
+
+    print("\n========== TEST SUMMARY ==========")
+    print("Passed:", passed)
+    print("Failed:", failed)
+    print("Total:", len(hostile))
 
 
-run_tests()
+if __name__ == "__main__":
+    run_tests()
