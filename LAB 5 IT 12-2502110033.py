@@ -1,16 +1,13 @@
-# Raw bench line
-line = "P123 25.4 3.5"
+line = "P201, 24.97, NIGHT"
 
-# Extract the fields
-part_code, dia, shift = line.split()
+code, dia, shift = line.split(",")
 
-# Convert diameter to a real float
-dia = float(dia)
+code = code.strip()
+dia = float(dia.strip())
+shift = shift.strip()
 
-# Print each value with a label
-print("Part code:", part_code)
-print("Diameter:", dia)
-print("Shift:", shift)
+print("Part Code =", code)
+print("Diameter =", dia)
+print("Shift =", shift)
 
-# Prove diameter is a number
-print("Diameter + 0.01:", dia + 0.01)
+print("After adding 0.01 =", dia + 0.01)
